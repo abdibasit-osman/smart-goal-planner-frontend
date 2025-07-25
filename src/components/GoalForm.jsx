@@ -15,7 +15,9 @@ const GoalForm = ({ onAddGoal }) => {
       deadline
     };
 
-    fetch('http://localhost:3001/goals', {
+    const BASE_URL = "https://smart-goal-planner-backend-1.onrender.com";
+
+    fetch(`${BASE_URL}/goals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
