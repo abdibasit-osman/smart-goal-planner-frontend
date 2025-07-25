@@ -1,43 +1,71 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const GoalForm = ({ onAddGoal }) => {
+const GoalForm = ({ onAddGoal, onUpdateGoal, goalToEdit }) => {
   const [title, setTitle] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [deadline, setDeadline] = useState('');
 
+  const BASE_URL = "https://smart-goal-planner-backend-1.onrender.com";
+
+  useEffect(() => {
+    if (goalToEdit) {
+      setTitle(goalToEdit.title);
+      setTargetAmount(goalToEdit.targetAmount);
+      setDeadline(goalToEdit.deadline);
+    }
+  }, [goalToEdit]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const newGoal = {
+    const goalData = {
       title,
       targetAmount: parseFloat(targetAmount),
-      savedAmount: 0,
-      deadline
+      deadline,
     };
 
-    const BASE_URL = "https://smart-goal-planner-backend-1.onrender.com";
-
-    fetch(`${BASE_URL}/goals`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(newGoal)
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        onAddGoal(data); // call parent to update state
-        // Reset form
-        setTitle('');
-        setTargetAmount('');
-        setDeadline('');
+    if (goalToEdit) {
+      // Update existing goal
+      fetch(`${BASE_URL}/goals/${goalToEdit.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(goalData),
       })
-      .catch((error) => console.error('Error adding goal:', error));
+        .then((res) => res.json())
+        .then((updatedGoal) => {
+          onUpdateGoal(updatedGoal);
+          resetForm();
+        })
+        .catch((error) => console.error('Error updating goal:', error));
+    } else {
+      // Add new goal
+      fetch(`${BASE_URL}/goals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...goalData, savedAmount: 0 }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          onAddGoal(data);
+          resetForm();
+        })
+        .catch((error) => console.error('Error adding goal:', error));
+    }
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setTargetAmount('');
+    setDeadline('');
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h3>Add New Goal</h3>
+      <h3>{goalToEdit ? 'Edit Goal' : 'Add New Goal'}</h3>
       <input
         type="text"
         placeholder="Goal Title"
@@ -61,7 +89,7 @@ const GoalForm = ({ onAddGoal }) => {
         required
       />
       <br />
-      <button type="submit">Add Goal</button>
+      <button type="submit">{goalToEdit ? 'Update Goal' : 'Add Goal'}</button>
     </form>
   );
 };
